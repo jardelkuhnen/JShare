@@ -5,8 +5,6 @@ import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Map;
 
-import br.univel.jshare.enun.TipoFiltro;
-
 public interface IServer extends Remote {
 
 	public static final String NOME_SERVICO = "JShare";

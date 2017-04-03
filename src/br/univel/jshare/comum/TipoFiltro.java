@@ -1,4 +1,4 @@
-package br.univel.jshare.enun;
+package br.univel.jshare.comum;
 
 public enum TipoFiltro {
 
