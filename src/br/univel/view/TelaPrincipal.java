@@ -7,6 +7,9 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -14,7 +17,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +56,9 @@ public class TelaPrincipal extends JFrame implements IServer {
 	private Cliente cliente;
 	private JTextField txtPortaCliente;
 	private JComboBox cmbIps;
-	private long id;
+	private long id = 0;
+	private List<Cliente> clientes;
+	private File file;
 
 	/**
 	 * Launch the application.
@@ -113,15 +120,15 @@ public class TelaPrincipal extends JFrame implements IServer {
 		gbc_lblIp.gridx = 0;
 		gbc_lblIp.gridy = 1;
 		contentPane.add(lblIp, gbc_lblIp);
-		
-				cmbIps = new JComboBox();
-				cmbIps.setModel(new DefaultComboBoxModel<>(new Vector<String>(getIpsDisponiveis())));
-				GridBagConstraints gbc_cmbIps = new GridBagConstraints();
-				gbc_cmbIps.insets = new Insets(0, 0, 5, 5);
-				gbc_cmbIps.fill = GridBagConstraints.HORIZONTAL;
-				gbc_cmbIps.gridx = 1;
-				gbc_cmbIps.gridy = 1;
-				contentPane.add(cmbIps, gbc_cmbIps);
+
+		cmbIps = new JComboBox();
+		cmbIps.setModel(new DefaultComboBoxModel<>(new Vector<String>(getIpsDisponiveis())));
+		GridBagConstraints gbc_cmbIps = new GridBagConstraints();
+		gbc_cmbIps.insets = new Insets(0, 0, 5, 5);
+		gbc_cmbIps.fill = GridBagConstraints.HORIZONTAL;
+		gbc_cmbIps.gridx = 1;
+		gbc_cmbIps.gridy = 1;
+		contentPane.add(cmbIps, gbc_cmbIps);
 
 		JLabel lblPorta = new JLabel("Porta Servidor");
 		GridBagConstraints gbc_lblPorta = new GridBagConstraints();
@@ -149,16 +156,16 @@ public class TelaPrincipal extends JFrame implements IServer {
 		gbc_lblSeuIp.gridx = 0;
 		gbc_lblSeuIp.gridy = 2;
 		contentPane.add(lblSeuIp, gbc_lblSeuIp);
-		
-				txtIpCliente = new JTextField();
-				txtIpCliente.setText("127.0.0.1");
-				GridBagConstraints gbc_txtIpCliente = new GridBagConstraints();
-				gbc_txtIpCliente.fill = GridBagConstraints.HORIZONTAL;
-				gbc_txtIpCliente.insets = new Insets(0, 0, 5, 5);
-				gbc_txtIpCliente.gridx = 1;
-				gbc_txtIpCliente.gridy = 2;
-				contentPane.add(txtIpCliente, gbc_txtIpCliente);
-				txtIpCliente.setColumns(10);
+
+		txtIpCliente = new JTextField();
+		txtIpCliente.setText("127.0.0.1");
+		GridBagConstraints gbc_txtIpCliente = new GridBagConstraints();
+		gbc_txtIpCliente.fill = GridBagConstraints.HORIZONTAL;
+		gbc_txtIpCliente.insets = new Insets(0, 0, 5, 5);
+		gbc_txtIpCliente.gridx = 1;
+		gbc_txtIpCliente.gridy = 2;
+		contentPane.add(txtIpCliente, gbc_txtIpCliente);
+		txtIpCliente.setColumns(10);
 
 		JLabel lblSuaPorta = new JLabel("Porta Cliente");
 		GridBagConstraints gbc_lblSuaPorta = new GridBagConstraints();
@@ -182,7 +189,21 @@ public class TelaPrincipal extends JFrame implements IServer {
 		btnConectar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 
-				conectarServidor();
+				try {
+					// Create my client
+					cliente = new Cliente();
+					cliente.setIp(txtIpCliente.getText().trim());
+					cliente.setPorta(Integer.parseInt(txtPortaServidor.getText().trim()));
+					cliente.setNome(txtNomeCliente.getText().trim());
+					cliente.setId(new Long(112));
+
+					// publishing arq exists on this client
+					servidor.publicarListaArquivos(cliente, getArquivosDisponiveis());
+
+					conectarServidor();
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
 
 			}
 		});
@@ -192,15 +213,14 @@ public class TelaPrincipal extends JFrame implements IServer {
 		gbc_btnConectar.gridx = 4;
 		gbc_btnConectar.gridy = 2;
 		contentPane.add(btnConectar, gbc_btnConectar);
-		
+
 		JButton btnLigarServidor = new JButton("Ligar Servidor");
 		btnLigarServidor.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				
-				// Iniciando meu servidor
+
+				// Begining RMI
 				iniciarRMI();
 
-				
 			}
 		});
 		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
@@ -245,6 +265,11 @@ public class TelaPrincipal extends JFrame implements IServer {
 		contentPane.add(cmbFiltros, gbc_cmbFiltros);
 
 		JButton btnPesquisar = new JButton("Pesquisar");
+		btnPesquisar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
 		GridBagConstraints gbc_btnPesquisar = new GridBagConstraints();
 		gbc_btnPesquisar.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnPesquisar.insets = new Insets(0, 0, 5, 0);
@@ -271,11 +296,80 @@ public class TelaPrincipal extends JFrame implements IServer {
 		gbc_btnDownload.gridy = 5;
 		contentPane.add(btnDownload, gbc_btnDownload);
 
+		// Cria listagem de clientes
+		clientes = new ArrayList<Cliente>();
+
+		
+		//Creat folder of arqs
+		file = new File("C:\\Share");
+		file.mkdir();
+
+	}
+
+	protected List<Arquivo> getArquivosDisponiveis() {
+
+		List<Arquivo> lista = new ArrayList<Arquivo>();
+
+		for (final File fileEntry : file.listFiles()) {
+
+			if (fileEntry.isFile()) {
+
+				Arquivo arq = new Arquivo();
+				
+				arq.setNome(file.getName());
+				arq.setPath(file.getPath());
+				arq.setTamanho(file.length());
+				arq.setExtensao(getFileExtension(file));
+				arq.setMd5(getMD5File(file.getName()));
+				arq.setDataHoraModificacao(new Date(file.lastModified()));
+
+				lista.add(arq);
+
+			}
+
+		}
+
+		return lista;
+	}
+
+	private String getMD5File(String name) {
+
+		InputStream fis;
+		try {
+			fis = new FileInputStream(name);
+
+			byte[] buffer = new byte[1024];
+			MessageDigest complete = MessageDigest.getInstance("MD5");
+			int numRead;
+
+			do {
+				numRead = fis.read(buffer);
+				if (numRead > 0) {
+					complete.update(buffer, 0, numRead);
+				}
+			} while (numRead != -1);
+
+			fis.close();
+			return complete.toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "";
+
+	}
+
+	// Retorna a extensao do arquivo
+	private String getFileExtension(File file2) {
+		String fileName = file.getName();
+		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+			return fileName.substring(fileName.lastIndexOf(".") + 1);
+		else
+			return "";
+
 	}
 
 	protected void conectarServidor() {
-
-		
+		// get my nome
 		String meuNome = txtNomeCliente.getText().trim();
 		if (meuNome.length() == 0) {
 			JOptionPane.showMessageDialog(this, "Você precisa digitar um nome!");
@@ -297,13 +391,6 @@ public class TelaPrincipal extends JFrame implements IServer {
 		}
 
 		int intPorta = Integer.parseInt(strPorta);
-
-		// Create my client
-		cliente = new Cliente();
-		cliente.setIp(txtIpCliente.getText().trim());
-		cliente.setPorta(Integer.parseInt(txtPortaServidor.getText().trim()));
-		cliente.setNome(txtNomeCliente.getText().trim());
-		cliente.setId(new Long(112));
 
 		try {
 			registry = LocateRegistry.getRegistry(host, intPorta);
@@ -360,11 +447,14 @@ public class TelaPrincipal extends JFrame implements IServer {
 
 		incrementarID();
 
+		c.setId(id);
+
+		System.out.println("Clliente " + c.getNome() + " conectou");
+
 	}
 
-	// Incrementa osid de cliente
+	// Incrementa o id de cliente
 	private void incrementarID() {
-
 		id++;
 
 	}
