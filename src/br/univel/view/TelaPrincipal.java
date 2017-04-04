@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -41,6 +42,7 @@ import br.univel.jshare.comum.Arquivo;
 import br.univel.jshare.comum.Cliente;
 import br.univel.jshare.comum.IServer;
 import br.univel.jshare.comum.TipoFiltro;
+import br.univel.utils.Md5;
 
 public class TelaPrincipal extends JFrame implements IServer {
 
@@ -59,6 +61,8 @@ public class TelaPrincipal extends JFrame implements IServer {
 	private long id = 0;
 	private List<Cliente> clientes;
 	private File file;
+	private HashMap<Cliente, List<Arquivo>> mapaclientesArq;
+	private List<Arquivo> listaArqs;
 
 	/**
 	 * Launch the application.
@@ -149,6 +153,22 @@ public class TelaPrincipal extends JFrame implements IServer {
 		contentPane.add(txtPortaServidor, gbc_txtPortaServidor);
 		txtPortaServidor.setColumns(10);
 
+		JButton btnLigarServidor = new JButton("Ligar Servidor");
+		btnLigarServidor.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+
+				// Begining RMI
+				iniciarRMI();
+				btnLigarServidor.setEnabled(false);
+
+			}
+		});
+		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
+		gbc_btnLigarServidor.insets = new Insets(0, 0, 5, 0);
+		gbc_btnLigarServidor.gridx = 5;
+		gbc_btnLigarServidor.gridy = 1;
+		contentPane.add(btnLigarServidor, gbc_btnLigarServidor);
+
 		JLabel lblSeuIp = new JLabel("Ip Cliente");
 		GridBagConstraints gbc_lblSeuIp = new GridBagConstraints();
 		gbc_lblSeuIp.anchor = GridBagConstraints.EAST;
@@ -197,11 +217,9 @@ public class TelaPrincipal extends JFrame implements IServer {
 					cliente.setNome(txtNomeCliente.getText().trim());
 					cliente.setId(new Long(112));
 
-					// publishing arq exists on this client
-					servidor.publicarListaArquivos(cliente, getArquivosDisponiveis());
-
 					conectarServidor();
-				} catch (RemoteException e) {
+
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 
@@ -209,25 +227,10 @@ public class TelaPrincipal extends JFrame implements IServer {
 		});
 		GridBagConstraints gbc_btnConectar = new GridBagConstraints();
 		gbc_btnConectar.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnConectar.insets = new Insets(0, 0, 5, 5);
-		gbc_btnConectar.gridx = 4;
+		gbc_btnConectar.insets = new Insets(0, 0, 5, 0);
+		gbc_btnConectar.gridx = 5;
 		gbc_btnConectar.gridy = 2;
 		contentPane.add(btnConectar, gbc_btnConectar);
-
-		JButton btnLigarServidor = new JButton("Ligar Servidor");
-		btnLigarServidor.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-
-				// Begining RMI
-				iniciarRMI();
-
-			}
-		});
-		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
-		gbc_btnLigarServidor.insets = new Insets(0, 0, 5, 0);
-		gbc_btnLigarServidor.gridx = 5;
-		gbc_btnLigarServidor.gridy = 2;
-		contentPane.add(btnLigarServidor, gbc_btnLigarServidor);
 
 		JLabel lblPesquisa = new JLabel("Pesquisa");
 		GridBagConstraints gbc_lblPesquisa = new GridBagConstraints();
@@ -299,63 +302,38 @@ public class TelaPrincipal extends JFrame implements IServer {
 		// Cria listagem de clientes
 		clientes = new ArrayList<Cliente>();
 
-		
-		//Creat folder of arqs
+		// Creat folder of arqs
 		file = new File("C:\\Share");
 		file.mkdir();
 
+		// Creating map about clients and arqs
+		mapaclientesArq = new HashMap<>();
+
 	}
 
+	
+	//Return one lista with arqs 
 	protected List<Arquivo> getArquivosDisponiveis() {
 
-		List<Arquivo> lista = new ArrayList<Arquivo>();
-
-		for (final File fileEntry : file.listFiles()) {
-
-			if (fileEntry.isFile()) {
-
+		File dirStart = file;
+		
+		List<Arquivo> listArq = new ArrayList<>();
+		
+		for (File file : dirStart.listFiles()) {
+			if (file.isFile()) {
 				Arquivo arq = new Arquivo();
-				
 				arq.setNome(file.getName());
-				arq.setPath(file.getPath());
 				arq.setTamanho(file.length());
-				arq.setExtensao(getFileExtension(file));
-				arq.setMd5(getMD5File(file.getName()));
+				String extensao = file.getName().substring(file.getName().lastIndexOf("."), file.getName().length());
+				arq.setExtensao(extensao);
+				arq.setPath(file.getPath());
 				arq.setDataHoraModificacao(new Date(file.lastModified()));
+				arq.setMd5(Md5.getMD5(arq.getPath()));
 
-				lista.add(arq);
-
+				listArq.add(arq);
 			}
-
 		}
-
-		return lista;
-	}
-
-	private String getMD5File(String name) {
-
-		InputStream fis;
-		try {
-			fis = new FileInputStream(name);
-
-			byte[] buffer = new byte[1024];
-			MessageDigest complete = MessageDigest.getInstance("MD5");
-			int numRead;
-
-			do {
-				numRead = fis.read(buffer);
-				if (numRead > 0) {
-					complete.update(buffer, 0, numRead);
-				}
-			} while (numRead != -1);
-
-			fis.close();
-			return complete.toString();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return "";
-
+		return listArq;
 	}
 
 	// Retorna a extensao do arquivo
@@ -448,6 +426,10 @@ public class TelaPrincipal extends JFrame implements IServer {
 		incrementarID();
 
 		c.setId(id);
+
+		mapaclientesArq.put(c, listaArqs);
+
+		servidor.publicarListaArquivos(c, getArquivosDisponiveis());
 
 		System.out.println("Clliente " + c.getNome() + " conectou");
 
