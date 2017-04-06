@@ -1,6 +1,7 @@
 package br.univel.jshare.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,50 +22,80 @@ public class ResultadoModel extends AbstractTableModel {
 	 * 
 	 * @param dados
 	 */
-	public ResultadoModel(Map<Cliente, List<Arquivo>> dados) {
 
-		int tempCli = 0;
-		for (Entry<Cliente, List<Arquivo>> e : dados.entrySet()) {
-			if (e.getValue() != null) {
-				tempCli += e.getValue().size();
+	private static final long serialVersionUID = 1L;
+	Map<Cliente, List<Arquivo>> listaArquivos = new HashMap<>();
+	private Object[][] matriz;
+	private int linhas;
+
+	public ResultadoModel(Map<Cliente, List<Arquivo>> lista) {
+		// Variavel local recebe a lista passada para o construtor
+		this.listaArquivos = lista;
+
+		linhas = 0;
+
+		// Percorre a lista e incrementa na variavel linhas o tamanho da lista
+		for (Entry<Cliente, List<Arquivo>> e : listaArquivos.entrySet())
+			linhas += e.getValue().size();
+
+		matriz = new Object[linhas][5];
+
+		int linha = 0;
+
+		for (Entry<Cliente, List<Arquivo>> e : listaArquivos.entrySet()) {
+			for (Arquivo arq : e.getValue()) {
+				matriz[linha][0] = arq.getNome();
+				matriz[linha][1] = arq.getTamanho();
+				matriz[linha][2] = e.getKey().getNome();
+				matriz[linha][3] = e.getKey().getIp();
+				matriz[linha][4] = e.getKey().getPorta();
+
+				linha++;
 			}
 		}
 
-		matrix = new Object[tempCli][4];
-
-		List<Cliente> list = new ArrayList<>(dados.keySet());
-
-		list.sort((o1, o2) -> o1.getNome().compareTo(o2.getNome()));
-
-		int cont = 0;
-		for (Cliente cli : list) {
-
-			if (dados != null && list != null) {
-
-				for (Arquivo arq : dados.get(cli)) {
-					matrix[cont][0] = cli.getId();
-					matrix[cont][1] = cli.getNome();
-					matrix[cont][2] = arq.getId();
-					matrix[cont][3] = arq.getNome();
-					cont++;
-				}
-			}
-		}
 	}
 
 	@Override
 	public int getColumnCount() {
-		return matrix[0].length;
+		return 5;
 	}
 
 	@Override
 	public int getRowCount() {
-		return matrix.length;
+		return linhas;
 	}
 
 	@Override
-	public Object getValueAt(int arg0, int arg1) {
-		return matrix[arg0][arg1];
+	public Object getValueAt(int row, int col) {
+		switch (col) {
+		case 0:
+			return matriz[row][0];
+		case 1:
+			return matriz[row][1];
+		case 2:
+			return matriz[row][2];
+		case 3:
+			return matriz[row][3];
+		default:
+			return matriz[row][4];
+		}
+	}
+
+	@Override
+	public String getColumnName(int col) {
+		switch (col) {
+		case 0:
+			return "ARQUIVO";
+		case 1:
+			return "TAMANHO";
+		case 2:
+			return "CLIENTE";
+		case 3:
+			return "IP";
+		default:
+			return "PORTA";
+		}
 	}
 
 }

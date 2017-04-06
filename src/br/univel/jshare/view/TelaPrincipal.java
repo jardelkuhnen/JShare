@@ -14,6 +14,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -67,6 +68,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private List<Arquivo> listaArqs;
 	private List<Arquivo> resultArqs;
 	private JTextField txtMeuIp;
+	private JButton btnDesconectar;
+	private JButton btndesligarServ;
+	private JButton btnPesquisar;
+	private JButton btnDownload;
+	private JTextField txtValorFiltro;
+	private JComboBox cmbFiltros;
 
 	/**
 	 * Launch the application.
@@ -96,13 +103,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		GridBagLayout gbl_contentPane = new GridBagLayout();
-		gbl_contentPane.columnWidths = new int[] { 63, 216, 89, 64, 69, 99, 0 };
-		gbl_contentPane.rowHeights = new int[] { 20, 0, 23, 22, 20, 0, 0 };
+		gbl_contentPane.columnWidths = new int[] { 63, 186, 89, 46, 92, 99, 0 };
+		gbl_contentPane.rowHeights = new int[] { 20, 0, 23, 22, 0, 20, 0, 0 };
 		gbl_contentPane.columnWeights = new double[] { 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
-		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, Double.MIN_VALUE };
+		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
 
-		JLabel lblIp = new JLabel("Ip Servidor");
+		JLabel lblIp = new JLabel("Meu Ip Servidor");
 		GridBagConstraints gbc_lblIp = new GridBagConstraints();
 		gbc_lblIp.anchor = GridBagConstraints.EAST;
 		gbc_lblIp.insets = new Insets(0, 0, 5, 5);
@@ -120,7 +127,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(txtMeuIp, gbc_txtMeuIp);
 		txtMeuIp.setColumns(10);
 
-		JLabel lblPorta = new JLabel("Porta Servidor");
+		JLabel lblPorta = new JLabel("Minha Porta Servidor");
 		GridBagConstraints gbc_lblPorta = new GridBagConstraints();
 		gbc_lblPorta.anchor = GridBagConstraints.EAST;
 		gbc_lblPorta.insets = new Insets(0, 0, 5, 5);
@@ -148,14 +155,33 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				btnLigarServidor.setEnabled(false);
 				txtMinhaPorta.setEditable(false);
 				txtMeuIp.setEnabled(false);
+				btndesligarServ.setEnabled(true);
 
 			}
 		});
 		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
-		gbc_btnLigarServidor.insets = new Insets(0, 0, 5, 0);
-		gbc_btnLigarServidor.gridx = 5;
+		gbc_btnLigarServidor.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnLigarServidor.insets = new Insets(0, 0, 5, 5);
+		gbc_btnLigarServidor.gridx = 4;
 		gbc_btnLigarServidor.gridy = 0;
 		contentPane.add(btnLigarServidor, gbc_btnLigarServidor);
+
+		btndesligarServ = new JButton("Desligar Servidor");
+		btndesligarServ.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+
+				desligarServidor();
+				btnLigarServidor.setEnabled(true);
+				btndesligarServ.setEnabled(false);
+
+			}
+		});
+		GridBagConstraints gbc_btndesligarServ = new GridBagConstraints();
+		gbc_btndesligarServ.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btndesligarServ.insets = new Insets(0, 0, 5, 0);
+		gbc_btndesligarServ.gridx = 5;
+		gbc_btndesligarServ.gridy = 0;
+		contentPane.add(btndesligarServ, gbc_btndesligarServ);
 
 		JLabel lblNome = new JLabel("Nome");
 		GridBagConstraints gbc_lblNome = new GridBagConstraints();
@@ -176,7 +202,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(txtNomeCliente, gbc_txtNomeCliente);
 		txtNomeCliente.setColumns(10);
 
-		JLabel lblSeuIp = new JLabel("Ip Cliente");
+		JLabel lblSeuIp = new JLabel("Ip Servidor");
 		GridBagConstraints gbc_lblSeuIp = new GridBagConstraints();
 		gbc_lblSeuIp.anchor = GridBagConstraints.EAST;
 		gbc_lblSeuIp.insets = new Insets(0, 0, 5, 5);
@@ -194,7 +220,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(txtIpServidor, gbc_txtIpCliente);
 		txtIpServidor.setColumns(10);
 
-		JLabel lblSuaPorta = new JLabel("Porta Cliente");
+		JLabel lblSuaPorta = new JLabel("Porta Servidor");
 		GridBagConstraints gbc_lblSuaPorta = new GridBagConstraints();
 		gbc_lblSuaPorta.anchor = GridBagConstraints.EAST;
 		gbc_lblSuaPorta.insets = new Insets(0, 0, 5, 5);
@@ -217,15 +243,43 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			public void actionPerformed(ActionEvent arg0) {
 
 				conectarServidor();
+				btnDesconectar.setEnabled(true);
+				btnConectar.setEnabled(false);
 
 			}
 		});
 		GridBagConstraints gbc_btnConectar = new GridBagConstraints();
 		gbc_btnConectar.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnConectar.insets = new Insets(0, 0, 5, 0);
-		gbc_btnConectar.gridx = 5;
+		gbc_btnConectar.insets = new Insets(0, 0, 5, 5);
+		gbc_btnConectar.gridx = 4;
 		gbc_btnConectar.gridy = 2;
 		contentPane.add(btnConectar, gbc_btnConectar);
+
+		btnDesconectar = new JButton("Desconectar");
+		btnLigarServidor.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+
+				try {
+
+					desconectar(getClienteLocal());
+
+					btnConectar.setEnabled(true);
+					btnDesconectar.setEnabled(false);
+
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+
+			}
+		});
+		GridBagConstraints gbc_btnDesconectar = new GridBagConstraints();
+		gbc_btnDesconectar.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnDesconectar.insets = new Insets(0, 0, 5, 0);
+		gbc_btnDesconectar.gridx = 5;
+		gbc_btnDesconectar.gridy = 2;
+		contentPane.add(btnDesconectar, gbc_btnDesconectar);
 
 		JLabel lblPesquisa = new JLabel("Pesquisa");
 		GridBagConstraints gbc_lblPesquisa = new GridBagConstraints();
@@ -236,9 +290,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(lblPesquisa, gbc_lblPesquisa);
 
 		txtPesquisa = new JTextField();
-		txtPesquisa.setFont(new Font("Tahoma", Font.PLAIN, 16));
+		txtPesquisa.setFont(new Font("Tahoma", Font.PLAIN, 18));
 		GridBagConstraints gbc_txtPesquisa = new GridBagConstraints();
-		gbc_txtPesquisa.gridwidth = 2;
+		gbc_txtPesquisa.gridwidth = 4;
 		gbc_txtPesquisa.insets = new Insets(0, 0, 5, 5);
 		gbc_txtPesquisa.fill = GridBagConstraints.BOTH;
 		gbc_txtPesquisa.gridx = 1;
@@ -246,33 +300,35 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(txtPesquisa, gbc_txtPesquisa);
 		txtPesquisa.setColumns(10);
 
-		JLabel lblFiltro = new JLabel("Filtro");
-		GridBagConstraints gbc_lblFiltro = new GridBagConstraints();
-		gbc_lblFiltro.insets = new Insets(0, 0, 5, 5);
-		gbc_lblFiltro.anchor = GridBagConstraints.EAST;
-		gbc_lblFiltro.gridx = 3;
-		gbc_lblFiltro.gridy = 3;
-		contentPane.add(lblFiltro, gbc_lblFiltro);
-
-		JComboBox cmbFiltros = new JComboBox(TipoFiltro.values());
-		GridBagConstraints gbc_cmbFiltros = new GridBagConstraints();
-		gbc_cmbFiltros.insets = new Insets(0, 0, 5, 5);
-		gbc_cmbFiltros.fill = GridBagConstraints.HORIZONTAL;
-		gbc_cmbFiltros.gridx = 4;
-		gbc_cmbFiltros.gridy = 3;
-		contentPane.add(cmbFiltros, gbc_cmbFiltros);
-
-		JButton btnPesquisar = new JButton("Pesquisar");
+		btnPesquisar = new JButton("Pesquisar");
 		btnPesquisar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
 				String search = txtPesquisa.getText().trim();
+				TipoFiltro filtro = TipoFiltro.valueOf(cmbFiltros.getSelectedItem().toString());
+				String vlrFiltro = txtValorFiltro.getText().trim();
 
 				if (search.equals("")) {
 					JOptionPane.showMessageDialog(null, "Atenção, campo de busca vazio");
 				} else {
 
-					pesquisarArq(search, cmbFiltros.getSelectedItem().toString());
+					HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
+
+					try {
+						resultSearch = (HashMap<Cliente, List<Arquivo>>) procurarArquivo(search, filtro, vlrFiltro);
+
+						if (resultSearch.size() > 0) {
+
+							ResultadoModel model = new ResultadoModel(resultSearch);
+							table.setModel(model);
+
+						} else {
+							JOptionPane.showMessageDialog(TelaPrincipal.this, "Nenhum resultado encontrado");
+						}
+
+					} catch (RemoteException e1) {
+						e1.printStackTrace();
+					}
 				}
 
 			}
@@ -284,24 +340,45 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		gbc_btnPesquisar.gridy = 3;
 		contentPane.add(btnPesquisar, gbc_btnPesquisar);
 
+		btnDownload = new JButton("Download");
+		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
+		gbc_btnDownload.insets = new Insets(0, 0, 5, 5);
+		gbc_btnDownload.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnDownload.gridx = 0;
+		gbc_btnDownload.gridy = 4;
+		contentPane.add(btnDownload, gbc_btnDownload);
+
+		cmbFiltros = new JComboBox(TipoFiltro.values());
+		cmbFiltros.setToolTipText("Filtro");
+		GridBagConstraints gbc_cmbFiltros = new GridBagConstraints();
+		gbc_cmbFiltros.insets = new Insets(0, 0, 5, 5);
+		gbc_cmbFiltros.fill = GridBagConstraints.HORIZONTAL;
+		gbc_cmbFiltros.gridx = 4;
+		gbc_cmbFiltros.gridy = 4;
+		contentPane.add(cmbFiltros, gbc_cmbFiltros);
+
+		txtValorFiltro = new JTextField();
+		txtValorFiltro.setToolTipText("Valor Filtro");
+		txtValorFiltro.setText("Valor Filtro");
+		GridBagConstraints gbc_txtValorFiltro = new GridBagConstraints();
+		gbc_txtValorFiltro.insets = new Insets(0, 0, 5, 0);
+		gbc_txtValorFiltro.fill = GridBagConstraints.HORIZONTAL;
+		gbc_txtValorFiltro.gridx = 5;
+		gbc_txtValorFiltro.gridy = 4;
+		contentPane.add(txtValorFiltro, gbc_txtValorFiltro);
+		txtValorFiltro.setColumns(10);
+
 		JScrollPane scrollPane = new JScrollPane();
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
 		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
 		gbc_scrollPane.gridwidth = 6;
 		gbc_scrollPane.fill = GridBagConstraints.BOTH;
 		gbc_scrollPane.gridx = 0;
-		gbc_scrollPane.gridy = 4;
+		gbc_scrollPane.gridy = 5;
 		contentPane.add(scrollPane, gbc_scrollPane);
 
 		table = new JTable();
 		scrollPane.setViewportView(table);
-
-		JButton btnDownload = new JButton("Download");
-		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
-		gbc_btnDownload.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnDownload.gridx = 5;
-		gbc_btnDownload.gridy = 5;
-		contentPane.add(btnDownload, gbc_btnDownload);
 
 		// Cria listagem de clientes
 		clientes = new ArrayList<Cliente>();
@@ -312,6 +389,42 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		// Creating map about clients and arqs
 		mapaclientesArq = new HashMap<>();
+
+		configuracaoInicial();
+
+	}
+
+	private void configuracaoInicial() {
+
+		btnDesconectar.setEnabled(false);
+		btndesligarServ.setEnabled(false);
+		btnPesquisar.setEnabled(false);
+		btnDownload.setEnabled(false);
+
+	}
+
+	public Cliente getClienteLocal() {
+
+		Cliente cliente = new Cliente();
+		cliente.setId(new Long(idCliente++));
+		cliente.setIp(txtMeuIp.getText().trim());
+		cliente.setNome(txtNomeCliente.getText().trim());
+		cliente.setPorta(Integer.parseInt(txtMinhaPorta.getText()));
+
+		return cliente;
+
+	}
+
+	// Desliga o servico do servidor
+	protected void desligarServidor() {
+
+		try {
+			UnicastRemoteObject.unexportObject(servidor, true);
+			servidor = null;
+
+		} catch (NoSuchObjectException e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -328,77 +441,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		return IP.getHostAddress().toString();
 	}
 
-	// Method responsible for search arq with contains this search and where
-	// with filter
-	protected void pesquisarArq(String search, String filter) {
-
-		resultArqs = new ArrayList<>();
-		HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
-
-		Pattern pat = Pattern.compile(".*" + search + ".*");
-
-		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
-
-			Cliente client = getClient(e);
-
-			for (Arquivo arq : mapaclientesArq.get(e.getKey())) {
-
-				switch (filter) {
-				case "NOME":
-
-					if (arq.getNome().contains(search.toLowerCase())) {
-
-						resultArqs.add(arq);
-
-					}
-
-				case "TAMANHO_MIN":
-
-					try {
-
-						if (arq.getTamanho() > Integer.parseInt(search)) {
-
-							resultArqs.add(arq);
-
-						}
-					} catch (Exception e2) {
-					}
-
-				case "TAMANHO_MAX":
-					try {
-						if (arq.getTamanho() < Integer.parseInt(search.toLowerCase())) {
-
-							resultArqs.add(arq);
-						}
-					} catch (Exception e3) {
-
-					}
-				case "EXTENSA":
-
-					if (arq.getExtensao().equals(search.toLowerCase())) {
-						resultArqs.add(arq);
-					}
-
-				default:
-					JOptionPane.showMessageDialog(null, "Algo deu errado. Verifique sua pesquisa");
-					break;
-				}
-
-				resultSearch.put(client, listaArqs);
-
-			}
-		}
-
-		// Print the values on view after the search
-		setViewSearch(resultSearch);
-
-	}
-
 	private void setViewSearch(HashMap<Cliente, List<Arquivo>> resultSearch) {
 
-		ResultadoModel model = new ResultadoModel(resultSearch);
-
-		table.setModel(model);
+		// ResultadoModel model = new ResultadoModel(resultSearch);
+		//
+		// table.setModel(model);
 
 	}
 
@@ -448,7 +495,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	}
 
 	protected void conectarServidor() {
-		// get my nome
 		String meuNome = txtNomeCliente.getText().trim();
 		if (meuNome.length() == 0) {
 			JOptionPane.showMessageDialog(this, "VocÃª precisa digitar um nome!");
@@ -463,18 +509,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		}
 
 		// Get my port
-		String strPorta = txtMinhaPorta.getText().trim();
+		String strPorta = txtPortaServidor.getText().trim();
 		if (!strPorta.matches("[0-9]+") || strPorta.length() > 5) {
 			JOptionPane.showMessageDialog(this, "A porta deve ser um valor máximo de no máximo 5 dígitos!");
 			return;
 		}
 
-		Cliente cliente = new Cliente();
-		cliente.setId(new Long(idCliente++));
-		cliente.setNome(txtNomeCliente.getText().trim());
-		cliente.setIp(txtMeuIp.getText().trim());
-		cliente.setPorta(Integer.parseInt(txtMinhaPorta.getText().trim()));
-		cliente.setId(new Long(idCliente++));
+		Cliente cliente = getClienteLocal();
 
 		int intPorta = Integer.parseInt(strPorta);
 
@@ -482,8 +523,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			registryClient = LocateRegistry.getRegistry(host, intPorta);
 
 			clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
-
-			clienteServ = (IServer) UnicastRemoteObject.exportObject(this, 0);
 
 			clienteServ.registrarCliente(cliente);
 
@@ -495,6 +534,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		txtIpServidor.setEditable(false);
 		txtNomeCliente.setEditable(false);
 		txtPortaServidor.setEditable(false);
+		btnPesquisar.setEnabled(true);
 	}
 
 	private void iniciarRMI() {
@@ -514,9 +554,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		try {
 
+			servidor = (IServer) UnicastRemoteObject.exportObject(TelaPrincipal.this, 0);
+
 			registryServ = LocateRegistry.createRegistry(intPorta);
 
-			registryServ.rebind(IServer.NOME_SERVICO, this);
+			registryServ.rebind(IServer.NOME_SERVICO, servidor);
 
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -530,8 +572,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	public void registrarCliente(Cliente c) throws RemoteException {
 
 		mapaclientesArq.put(c, getArquivosDisponiveis());
-
-		// servidor.publicarListaArquivos(c, getArquivosDisponiveis());
 
 		System.out.println("Clliente " + c.getNome() + " conectou");
 
@@ -547,7 +587,71 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public Map<Cliente, List<Arquivo>> procurarArquivo(String query, TipoFiltro tipoFiltro, String filtro)
 			throws RemoteException {
-		return null;
+
+		resultArqs = new ArrayList<>();
+		HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
+
+		Pattern pat = Pattern.compile(".*" + query + ".*");
+
+		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
+
+			Cliente client = getClient(e);
+
+			for (Arquivo arq : e.getValue()) {
+
+				switch (tipoFiltro) {
+				case NOME:
+
+					if (arq.getNome().contains(query.toLowerCase())) {
+
+						resultArqs.add(arq);
+
+					}
+
+				case TAMANHO_MIN:
+
+					try {
+
+						if (arq.getTamanho() > Integer.parseInt(filtro)) {
+
+							if (arq.getNome().contains(query.toLowerCase())) {
+
+								resultArqs.add(arq);
+							}
+
+						}
+					} catch (Exception e2) {
+					}
+
+				case TAMANHO_MAX:
+					try {
+						if (arq.getTamanho() < Integer.parseInt(query.toLowerCase())) {
+
+							if (arq.getNome().contains(query.toLowerCase())) {
+								resultArqs.add(arq);
+							}
+
+						}
+					} catch (Exception e3) {
+
+					}
+				case EXTENSAO:
+
+					if (arq.getExtensao().equals(query.toLowerCase())) {
+						resultArqs.add(arq);
+					}
+
+				default:
+					JOptionPane.showMessageDialog(null, "Algo deu errado. Verifique sua pesquisa");
+					break;
+				}
+
+				resultSearch.put(client, listaArqs);
+
+			}
+		}
+
+		return resultSearch;
 	}
 
 	@Override
@@ -557,6 +661,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
+
+		if (servidor != null) {
+			servidor.desconectar(c);
+			servidor = null;
+		}
 
 	}
 
