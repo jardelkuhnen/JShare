@@ -56,10 +56,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JButton btnConectar;
 	private JTextField txtIpServidor;
 	private IServer servidor;
-	private Registry registry;
-	private Cliente cliente;
+	private IServer clienteServ;
+	private Registry registryServ;
+	private Registry registryClient;
 	private JTextField txtPortaServidor;
-	private long id = 0;
+	private long idCliente = 0;
 	private List<Cliente> clientes;
 	private File file;
 	private HashMap<Cliente, List<Arquivo>> mapaclientesArq;
@@ -215,19 +216,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		btnConectar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 
-				try {
-					// Create my client
-					cliente = new Cliente();
-					// cliente.setIp(cmbIps.getSelectedItem());
-					cliente.setPorta(Integer.parseInt(txtMinhaPorta.getText().trim()));
-					cliente.setNome(txtNomeCliente.getText().trim());
-					cliente.setId(new Long(112));
-
-					conectarServidor();
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				conectarServidor();
 
 			}
 		});
@@ -480,16 +469,23 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			return;
 		}
 
+		Cliente cliente = new Cliente();
+		cliente.setId(new Long(idCliente++));
+		cliente.setNome(txtNomeCliente.getText().trim());
+		cliente.setIp(txtMeuIp.getText().trim());
+		cliente.setPorta(Integer.parseInt(txtMinhaPorta.getText().trim()));
+		cliente.setId(new Long(idCliente++));
+
 		int intPorta = Integer.parseInt(strPorta);
 
 		try {
-			registry = LocateRegistry.getRegistry(host, intPorta);
+			registryClient = LocateRegistry.getRegistry(host, intPorta);
 
-			servidor = (IServer) registry.lookup(IServer.NOME_SERVICO);
+			clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
 
-			servidor = (IServer) UnicastRemoteObject.exportObject(this, 0);
+			clienteServ = (IServer) UnicastRemoteObject.exportObject(this, 0);
 
-			servidor.registrarCliente(cliente);
+			clienteServ.registrarCliente(cliente);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -518,9 +514,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		try {
 
-			registry = LocateRegistry.createRegistry(intPorta);
+			registryServ = LocateRegistry.createRegistry(intPorta);
 
-			registry.rebind(IServer.NOME_SERVICO, this);
+			registryServ.rebind(IServer.NOME_SERVICO, this);
 
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -533,21 +529,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 
-		incrementarID();
+		mapaclientesArq.put(c, getArquivosDisponiveis());
 
-		c.setId(id);
-
-		mapaclientesArq.put(c, listaArqs);
-
-		servidor.publicarListaArquivos(c, getArquivosDisponiveis());
+		// servidor.publicarListaArquivos(c, getArquivosDisponiveis());
 
 		System.out.println("Clliente " + c.getNome() + " conectou");
-
-	}
-
-	// Incrementa o id de cliente
-	private void incrementarID() {
-		id++;
 
 	}
 
