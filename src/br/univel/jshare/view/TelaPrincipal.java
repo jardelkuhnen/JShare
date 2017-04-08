@@ -5,15 +5,18 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.TrayIcon.MessageType;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -21,14 +24,11 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import java.util.regex.Pattern;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -44,7 +44,7 @@ import br.univel.jshare.comum.Arquivo;
 import br.univel.jshare.comum.Cliente;
 import br.univel.jshare.comum.IServer;
 import br.univel.jshare.comum.TipoFiltro;
-import br.univel.jshare.model.ResultadoModel;
+import br.univel.jshare.model.MeuModelo;
 import br.univel.jshare.utils.MethodUtils;
 
 public class TelaPrincipal extends JFrame implements IServer, Serializable {
@@ -62,10 +62,10 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private Registry registryClient;
 	private JTextField txtPortaServidor;
 	private long idCliente = 0;
+	private long IdProd = 0;
 	private List<Cliente> clientes;
 	private File file;
 	private HashMap<Cliente, List<Arquivo>> mapaclientesArq;
-	private List<Arquivo> listaArqs;
 	private List<Arquivo> resultArqs;
 	private JTextField txtMeuIp;
 	private JButton btnDesconectar;
@@ -74,6 +74,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JButton btnDownload;
 	private JTextField txtValorFiltro;
 	private JComboBox cmbFiltros;
+	private static final String PATH_DOW_UP = "C:\\Share";
 
 	/**
 	 * Launch the application.
@@ -317,13 +318,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					try {
 						resultSearch = (HashMap<Cliente, List<Arquivo>>) procurarArquivo(search, filtro, vlrFiltro);
 
-						if (resultSearch.size() > 0) {
+						if (!resultSearch.isEmpty()) {
 
-							ResultadoModel model = new ResultadoModel(resultSearch);
+							btnDownload.setEnabled(true);
+
+							MeuModelo model = new MeuModelo(resultSearch);
 							table.setModel(model);
-
-						} else {
-							JOptionPane.showMessageDialog(TelaPrincipal.this, "Nenhum resultado encontrado");
 						}
 
 					} catch (RemoteException e1) {
@@ -341,6 +341,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(btnPesquisar, gbc_btnPesquisar);
 
 		btnDownload = new JButton("Download");
+		btnDownload.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+
+				getArquivoCliente(table.getSelectedRow());
+			}
+		});
 		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
 		gbc_btnDownload.insets = new Insets(0, 0, 5, 5);
 		gbc_btnDownload.fill = GridBagConstraints.HORIZONTAL;
@@ -369,6 +375,22 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		txtValorFiltro.setColumns(10);
 
 		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent click) {
+
+				if (click.getClickCount() == 2) {
+
+					int linhaSelecionada = table.getSelectedRow();
+
+					getArquivoCliente(linhaSelecionada);
+
+				}
+
+			}
+
+		});
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
 		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
 		gbc_scrollPane.gridwidth = 6;
@@ -384,13 +406,72 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		clientes = new ArrayList<Cliente>();
 
 		// Create folder of arqs
-		file = new File("C:\\Share");
+		file = new File(PATH_DOW_UP);
 		file.mkdir();
 
 		// Creating map about clients and arqs
 		mapaclientesArq = new HashMap<>();
 
 		configuracaoInicial();
+
+	}
+
+	protected void getArquivoCliente(int linhaSelecionada) {
+
+		Cliente cliente = new Cliente();
+		Arquivo arq = new Arquivo();
+
+		// pegando cliente
+		cliente.setNome(table.getValueAt(linhaSelecionada, 0).toString());
+		cliente.setIp(table.getValueAt(linhaSelecionada, 1).toString());
+		cliente.setPorta(Integer.parseInt(table.getValueAt(linhaSelecionada, 2).toString()));
+
+		// pegando arquivo
+		arq.setNome(table.getValueAt(linhaSelecionada, 3).toString());
+		arq.setPath(table.getValueAt(linhaSelecionada, 4).toString());
+		arq.setExtensao(table.getValueAt(linhaSelecionada, 5).toString());
+		arq.setTamanho(new Long(table.getValueAt(linhaSelecionada, 6).toString()));
+		arq.setMd5(table.getValueAt(linhaSelecionada, 7).toString());
+
+		try {
+			registryClient = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
+
+			clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
+			clienteServ.registrarCliente(cliente);
+
+			byte[] arqBytes = clienteServ.baixarArquivo(cliente, arq);
+
+			String Md5Arqcop = new MethodUtils().getMD5(arq.getPath());
+
+			if (arq.getMd5().equals(Md5Arqcop)) {
+
+				copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes);
+
+			} else {
+
+				JOptionPane.showMessageDialog(TelaPrincipal.this, "Baixano arquivo corrompido", "Atenção",
+						JOptionPane.INFORMATION_MESSAGE);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		/**
+		 * -----------------------
+		 * 
+		 * Dar continuidade no metodo.
+		 * 
+		 * falta criar um novo registro para o clietne onde será buscado o
+		 * arquivo e implementar o metodo de baixar arquivo e escrever na
+		 * máquina
+		 * 
+		 * 
+		 */
+
+	}
+
+	private void copiarArquivo(File file, byte[] arqBytes) {
 
 	}
 
@@ -441,14 +522,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		return IP.getHostAddress().toString();
 	}
 
-	private void setViewSearch(HashMap<Cliente, List<Arquivo>> resultSearch) {
-
-		// ResultadoModel model = new ResultadoModel(resultSearch);
-		//
-		// table.setModel(model);
-
-	}
-
 	// Return a client of mapClients
 	private Cliente getClient(java.util.Map.Entry<Cliente, List<Arquivo>> e) {
 
@@ -471,6 +544,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		for (File file : dirStart.listFiles()) {
 			if (file.isFile()) {
 				Arquivo arq = new Arquivo();
+				arq.setId(new Long(IdProd++));
 				arq.setNome(new MethodUtils().getNome(file.getName()));
 				arq.setExtensao(new MethodUtils().getExtension(file.getName()));
 				arq.setTamanho(file.length());
@@ -602,11 +676,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				switch (tipoFiltro) {
 				case NOME:
 
-					if (arq.getNome().contains(query.toLowerCase())) {
+					if (arq.getNome().contains(query)) {
 
 						resultArqs.add(arq);
 
 					}
+
+					break;
 
 				case TAMANHO_MIN:
 
@@ -614,7 +690,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 						if (arq.getTamanho() > Integer.parseInt(filtro)) {
 
-							if (arq.getNome().contains(query.toLowerCase())) {
+							if (arq.getNome().contains(query)) {
 
 								resultArqs.add(arq);
 							}
@@ -622,12 +698,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 						}
 					} catch (Exception e2) {
 					}
-
+					break;
 				case TAMANHO_MAX:
 					try {
-						if (arq.getTamanho() < Integer.parseInt(query.toLowerCase())) {
+						if (arq.getTamanho() < Integer.parseInt(query)) {
 
-							if (arq.getNome().contains(query.toLowerCase())) {
+							if (arq.getNome().contains(query)) {
 								resultArqs.add(arq);
 							}
 
@@ -635,20 +711,22 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					} catch (Exception e3) {
 
 					}
+					break;
 				case EXTENSAO:
 
-					if (arq.getExtensao().equals(query.toLowerCase())) {
+					if (arq.getExtensao().equals(query)) {
 						resultArqs.add(arq);
 					}
+					break;
 
 				default:
 					JOptionPane.showMessageDialog(null, "Algo deu errado. Verifique sua pesquisa");
 					break;
 				}
 
-				resultSearch.put(client, listaArqs);
-
 			}
+
+			resultSearch.put(client, resultArqs);
 		}
 
 		return resultSearch;
@@ -656,7 +734,22 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	@Override
 	public byte[] baixarArquivo(Cliente cli, Arquivo arq) throws RemoteException {
-		return null;
+
+		byte[] arqCop = null;
+
+		Path path = Paths.get(arq.getPath());
+
+		try {
+			arqCop = Files.readAllBytes(path);
+
+		} catch (IOException e) {
+
+			JOptionPane.showMessageDialog(TelaPrincipal.this, "Erro ao ler arquivo", "Erro", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
+
+		return arqCop;
+
 	}
 
 	@Override
