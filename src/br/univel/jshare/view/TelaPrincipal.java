@@ -76,6 +76,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JTextField txtValorFiltro;
 	private JComboBox cmbFiltros;
 	private static final String PATH_DOW_UP = "C:\\Share";
+	private Thread updateDir;
 
 	/**
 	 * Launch the application.
@@ -325,6 +326,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 							MeuModelo model = new MeuModelo(resultSearch);
 							table.setModel(model);
+
 						}
 
 					} catch (RemoteException e1) {
@@ -417,47 +419,77 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		configuracaoInicial();
 
+		atualizarDiretorio();
+
+		// atualiza o diretorio
+		updateDir.start();
+
+	}
+
+	private void atualizarDiretorio() {
+
+		updateDir = new Thread() {
+			@Override
+			public void run() {
+
+				try {
+					publicarListaArquivos(getClienteLocal(), getArquivosDisponiveis());
+
+					updateDir.sleep(5);
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+		};
+
 	}
 
 	protected void getArquivoCliente(int linhaSelecionada) {
 
-		Cliente cliente = new Cliente();
-		Arquivo arq = new Arquivo();
+		if (linhaSelecionada < 0) {
+			JOptionPane.showMessageDialog(TelaPrincipal.this, "Nenhuma linha selecionada!!!");
+		} else {
 
-		// pegando cliente
-		cliente.setNome(table.getValueAt(linhaSelecionada, 0).toString());
-		cliente.setIp(table.getValueAt(linhaSelecionada, 1).toString());
-		cliente.setPorta(Integer.parseInt(table.getValueAt(linhaSelecionada, 2).toString()));
+			Cliente cliente = new Cliente();
+			Arquivo arq = new Arquivo();
 
-		// pegando arquivo
-		arq.setNome(table.getValueAt(linhaSelecionada, 3).toString());
-		arq.setPath(table.getValueAt(linhaSelecionada, 4).toString());
-		arq.setExtensao(table.getValueAt(linhaSelecionada, 5).toString());
-		arq.setTamanho(new Long(table.getValueAt(linhaSelecionada, 6).toString()));
-		arq.setMd5(table.getValueAt(linhaSelecionada, 7).toString());
+			// pegando cliente
+			cliente.setNome(table.getValueAt(linhaSelecionada, 0).toString());
+			cliente.setIp(table.getValueAt(linhaSelecionada, 1).toString());
+			cliente.setPorta(Integer.parseInt(table.getValueAt(linhaSelecionada, 2).toString()));
 
-		try {
-			registryClient = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
+			// pegando arquivo
+			arq.setNome(table.getValueAt(linhaSelecionada, 3).toString());
+			arq.setPath(table.getValueAt(linhaSelecionada, 4).toString());
+			arq.setExtensao(table.getValueAt(linhaSelecionada, 5).toString());
+			arq.setTamanho(new Long(table.getValueAt(linhaSelecionada, 6).toString()));
+			arq.setMd5(table.getValueAt(linhaSelecionada, 7).toString());
 
-			clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
-			clienteServ.registrarCliente(cliente);
+			try {
+				registryClient = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
 
-			byte[] arqBytes = clienteServ.baixarArquivo(cliente, arq);
+				clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
+				clienteServ.registrarCliente(cliente);
 
-			String Md5Arqcop = new MethodUtils().getMD5(arq.getPath());
+				byte[] arqBytes = clienteServ.baixarArquivo(cliente, arq);
 
-			if (arq.getMd5().equals(Md5Arqcop)) {
+				String Md5Arqcop = new MethodUtils().getMD5(arq.getPath());
 
-				copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
+				if (arq.getMd5().equals(Md5Arqcop)) {
 
-			} else {
+					copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
 
-				JOptionPane.showMessageDialog(TelaPrincipal.this, "Baixano arquivo corrompido", "Atenção",
-						JOptionPane.INFORMATION_MESSAGE);
+				} else {
+
+					JOptionPane.showMessageDialog(TelaPrincipal.this, "Baixano arquivo corrompido", "Atenção",
+							JOptionPane.INFORMATION_MESSAGE);
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 
 		/**
