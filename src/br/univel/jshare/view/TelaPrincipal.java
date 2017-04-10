@@ -318,7 +318,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
 
 					try {
-						resultSearch = (HashMap<Cliente, List<Arquivo>>) procurarArquivo(search, filtro, vlrFiltro);
+						resultSearch = (HashMap<Cliente, List<Arquivo>>) clienteServ.procurarArquivo(search, filtro, vlrFiltro);
 
 						if (!resultSearch.isEmpty()) {
 
@@ -422,7 +422,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		atualizarDiretorio();
 
 		// atualiza o diretorio
-		updateDir.start();
+//		updateDir.start();
 
 	}
 
