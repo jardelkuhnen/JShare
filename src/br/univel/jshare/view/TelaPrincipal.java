@@ -17,6 +17,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -345,6 +346,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			public void actionPerformed(ActionEvent e) {
 
 				getArquivoCliente(table.getSelectedRow());
+
 			}
 		});
 		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
@@ -391,6 +393,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			}
 
 		});
+
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
 		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
 		gbc_scrollPane.gridwidth = 6;
@@ -445,7 +448,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 			if (arq.getMd5().equals(Md5Arqcop)) {
 
-				copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes);
+				copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
 
 			} else {
 
@@ -471,7 +474,15 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
-	private void copiarArquivo(File file, byte[] arqBytes) {
+	private void copiarArquivo(File file, byte[] arqBytes, Arquivo arq) {
+
+		try {
+			Files.write(Paths.get(PATH_DOW_UP.concat("\\" + file.getName() + arq.getExtensao())), arqBytes,
+					StandardOpenOption.CREATE);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -571,7 +582,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	protected void conectarServidor() {
 		String meuNome = txtNomeCliente.getText().trim();
 		if (meuNome.length() == 0) {
-			JOptionPane.showMessageDialog(this, "VocÃª precisa digitar um nome!");
+			JOptionPane.showMessageDialog(this, "Você precisa digitar um nome!");
 			return;
 		}
 
@@ -646,8 +657,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	public void registrarCliente(Cliente c) throws RemoteException {
 
 		mapaclientesArq.put(c, getArquivosDisponiveis());
-
-		System.out.println("Clliente " + c.getNome() + " conectou");
 
 	}
 

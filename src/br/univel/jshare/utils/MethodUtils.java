@@ -12,7 +12,7 @@ public class MethodUtils {
 
 		int i = name.lastIndexOf('.');
 		if (i > 0) {
-			extension = name.substring(i+1);
+			extension = name.substring(i);
 		}
 
 		return extension;
