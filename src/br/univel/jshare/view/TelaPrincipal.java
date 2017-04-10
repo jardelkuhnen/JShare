@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import javax.swing.JButton;
@@ -318,7 +319,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
 
 					try {
-						resultSearch = (HashMap<Cliente, List<Arquivo>>) clienteServ.procurarArquivo(search, filtro, vlrFiltro);
+						resultSearch = (HashMap<Cliente, List<Arquivo>>) clienteServ.procurarArquivo(search, filtro,
+								vlrFiltro);
 
 						if (!resultSearch.isEmpty()) {
 
@@ -422,7 +424,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		atualizarDiretorio();
 
 		// atualiza o diretorio
-//		updateDir.start();
+		// updateDir.start();
 
 	}
 
@@ -491,18 +493,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				e.printStackTrace();
 			}
 		}
-
-		/**
-		 * -----------------------
-		 * 
-		 * Dar continuidade no metodo.
-		 * 
-		 * falta criar um novo registro para o clietne onde será buscado o
-		 * arquivo e implementar o metodo de baixar arquivo e escrever na
-		 * máquina
-		 * 
-		 * 
-		 */
 
 	}
 
@@ -612,6 +602,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	}
 
 	protected void conectarServidor() {
+
 		String meuNome = txtNomeCliente.getText().trim();
 		if (meuNome.length() == 0) {
 			JOptionPane.showMessageDialog(this, "Você precisa digitar um nome!");
@@ -642,6 +633,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
 
 			clienteServ.registrarCliente(cliente);
+
+			clienteServ.publicarListaArquivos(cliente, getArquivosDisponiveis());
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -688,14 +681,27 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 
-		mapaclientesArq.put(c, getArquivosDisponiveis());
+		mapaclientesArq.put(c, new ArrayList<>());
 
 	}
 
 	@Override
 	public void publicarListaArquivos(Cliente c, List<Arquivo> lista) throws RemoteException {
 
-		mapaclientesArq.put(c, lista);
+		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
+			
+			
+			if (e.getKey().equals(c)) {
+				e.setValue(lista);
+				
+			}else{
+				
+				mapaclientesArq.put(c, lista);
+			}
+			
+			
+		}
+
 
 	}
 
