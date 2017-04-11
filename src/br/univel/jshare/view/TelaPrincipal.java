@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import javax.swing.JButton;
@@ -312,28 +311,23 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				TipoFiltro filtro = TipoFiltro.valueOf(cmbFiltros.getSelectedItem().toString());
 				String vlrFiltro = txtValorFiltro.getText().trim();
 
-				if (search.equals("")) {
-					JOptionPane.showMessageDialog(null, "Atenção, campo de busca vazio");
-				} else {
+				HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
 
-					HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
+				try {
+					resultSearch = (HashMap<Cliente, List<Arquivo>>) clienteServ.procurarArquivo(search, filtro,
+							vlrFiltro);
 
-					try {
-						resultSearch = (HashMap<Cliente, List<Arquivo>>) clienteServ.procurarArquivo(search, filtro,
-								vlrFiltro);
+					if (!resultSearch.isEmpty()) {
 
-						if (!resultSearch.isEmpty()) {
+						btnDownload.setEnabled(true);
 
-							btnDownload.setEnabled(true);
+						MeuModelo model = new MeuModelo(resultSearch);
+						table.setModel(model);
 
-							MeuModelo model = new MeuModelo(resultSearch);
-							table.setModel(model);
-
-						}
-
-					} catch (RemoteException e1) {
-						e1.printStackTrace();
 					}
+
+				} catch (RemoteException e1) {
+					e1.printStackTrace();
 				}
 
 			}
@@ -420,31 +414,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		mapaclientesArq = new HashMap<>();
 
 		configuracaoInicial();
-
-		atualizarDiretorio();
-
-		// atualiza o diretorio
-		// updateDir.start();
-
-	}
-
-	private void atualizarDiretorio() {
-
-		updateDir = new Thread() {
-			@Override
-			public void run() {
-
-				try {
-					publicarListaArquivos(getClienteLocal(), getArquivosDisponiveis());
-
-					updateDir.sleep(5);
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-			}
-		};
 
 	}
 
@@ -636,6 +605,30 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 			clienteServ.publicarListaArquivos(cliente, getArquivosDisponiveis());
 
+			Thread thread = new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+
+					while (true) {
+
+						try {
+							Cliente client = getClienteLocal();
+							List arqs = getArquivosDisponiveis();
+							clienteServ.publicarListaArquivos(client, arqs);
+							System.out.println("Arquivos do cliente " + client.getNome() + "atualizados com sucesso!!");
+
+							Thread.sleep(500);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+					}
+				}
+			});
+
+			thread.start();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -664,7 +657,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		try {
 
-			servidor = (IServer) UnicastRemoteObject.exportObject(TelaPrincipal.this, 0);
+			if (servidor == null) {
+				servidor = (IServer) UnicastRemoteObject.exportObject(TelaPrincipal.this, 0);
+			}
 
 			registryServ = LocateRegistry.createRegistry(intPorta);
 
@@ -688,20 +683,19 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void publicarListaArquivos(Cliente c, List<Arquivo> lista) throws RemoteException {
 
-		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
-			
-			
-			if (e.getKey().equals(c)) {
-				e.setValue(lista);
-				
-			}else{
-				
-				mapaclientesArq.put(c, lista);
-			}
-			
-			
-		}
+		synchronized (mapaclientesArq) {
 
+			for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
+
+				if (e.getKey().equals(c)) {
+					e.setValue(lista);
+
+				} else {
+					mapaclientesArq.put(c, lista);
+				}
+
+			}
+		}
 
 	}
 
@@ -761,7 +755,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					break;
 				case EXTENSAO:
 
-					if (arq.getExtensao().equals(query)) {
+					if (arq.getExtensao().contains(query)) {
 						resultArqs.add(arq);
 					}
 					break;
