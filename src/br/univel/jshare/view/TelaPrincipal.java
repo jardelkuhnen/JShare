@@ -618,7 +618,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 							clienteServ.publicarListaArquivos(client, arqs);
 							System.out.println("Arquivos do cliente " + client.getNome() + "atualizados com sucesso!!");
 
-							Thread.sleep(500);
+							Thread.sleep(5000);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -683,18 +683,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void publicarListaArquivos(Cliente c, List<Arquivo> lista) throws RemoteException {
 
-		synchronized (mapaclientesArq) {
+		HashMap<Cliente, List<Arquivo>> gambita = new HashMap<>();
 
-			for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
+		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
 
-				if (e.getKey().equals(c)) {
-					e.setValue(lista);
+			gambita.put(c, lista);
+			mapaclientesArq = gambita;
 
-				} else {
-					mapaclientesArq.put(c, lista);
-				}
-
-			}
 		}
 
 	}
