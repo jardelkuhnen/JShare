@@ -428,10 +428,10 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			arq.setMd5(table.getValueAt(linhaSelecionada, 7).toString());
 
 			try {
+
 				registryCliente = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
 
 				conexaoServidor = (IServer) registryCliente.lookup(IServer.NOME_SERVICO);
-				conexaoServidor.registrarCliente(cliente);
 
 				byte[] arqBytes = conexaoServidor.baixarArquivo(cliente, arq);
 
@@ -548,7 +548,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				arq.setPath(file.getPath());
 				arq.setMd5(new MethodUtils().getMD5(arq.getPath()));
 				arq.setTamanho(file.getTotalSpace());
-				
+
 				listArq.add(arq);
 			}
 		}
@@ -608,7 +608,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					while (true) {
 
 						try {
-							
+
 							Cliente client = getClienteLocal();
 							ArrayList<Arquivo> arqs = (ArrayList<Arquivo>) getArquivosDisponiveis();
 
@@ -674,7 +674,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		if (mapaclientesArq.containsKey(c)) {
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Cliente já registrado no servidor.");
-		
+
 		} else {
 
 			mapaclientesArq.put(c, new ArrayList<>());
