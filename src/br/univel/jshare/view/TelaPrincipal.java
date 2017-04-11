@@ -77,6 +77,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JComboBox cmbFiltros;
 	private static final String PATH_DOW_UP = "C:\\Share";
 	private Thread updateDir;
+	private JButton btnLigarServidor;
 
 	/**
 	 * Launch the application.
@@ -149,19 +150,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(txtMinhaPorta, gbc_txtMinhaPorta);
 		txtMinhaPorta.setColumns(10);
 
-		JButton btnLigarServidor = new JButton("Ligar Servidor");
-		btnLigarServidor.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-
-				// Begining RMI
-				iniciarRMI();
-				btnLigarServidor.setEnabled(false);
-				txtMinhaPorta.setEditable(false);
-				txtMeuIp.setEnabled(false);
-				btndesligarServ.setEnabled(true);
-
-			}
-		});
+		btnLigarServidor = new JButton("Ligar Servidor");
 		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
 		gbc_btnLigarServidor.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnLigarServidor.insets = new Insets(0, 0, 5, 5);
@@ -479,8 +468,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	private void configuracaoInicial() {
 
+		// Begining RMI
+		iniciarRMI();
+		btnLigarServidor.setEnabled(false);
+		txtMinhaPorta.setEditable(false);
+		txtMeuIp.setEnabled(false);
+
 		btnDesconectar.setEnabled(false);
-		btndesligarServ.setEnabled(false);
 		btnPesquisar.setEnabled(false);
 		btnDownload.setEnabled(false);
 
@@ -541,7 +535,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		File dirStart = defaultFile;
 
-		List<Arquivo> listArq = new ArrayList<>();
+		List<Arquivo> listArq = new ArrayList<Arquivo>();
 
 		for (File file : dirStart.listFiles()) {
 			if (file.isFile()) {
@@ -554,6 +548,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				arq.setPath(file.getPath());
 				arq.setMd5(new MethodUtils().getMD5(arq.getPath()));
 				arq.setTamanho(file.getTotalSpace());
+				
 				listArq.add(arq);
 			}
 		}
@@ -613,8 +608,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					while (true) {
 
 						try {
+							
 							Cliente client = getClienteLocal();
-							List arqs = getArquivosDisponiveis();
+							ArrayList<Arquivo> arqs = (ArrayList<Arquivo>) getArquivosDisponiveis();
 
 							conexaoServidor.publicarListaArquivos(client, arqs);
 
@@ -678,6 +674,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		if (mapaclientesArq.containsKey(c)) {
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Cliente já registrado no servidor.");
+		
 		} else {
 
 			mapaclientesArq.put(c, new ArrayList<>());
