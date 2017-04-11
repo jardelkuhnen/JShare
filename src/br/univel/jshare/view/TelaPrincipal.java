@@ -58,14 +58,14 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JButton btnConectar;
 	private JTextField txtIpServidor;
 	private IServer servidor;
-	private IServer clienteServ;
+	private IServer conexaoServidor;
 	private Registry registryServ;
-	private Registry registryClient;
+	private Registry registryCliente;
 	private JTextField txtPortaServidor;
 	private long idCliente = 0;
 	private long IdProd = 0;
 	private List<Cliente> clientes;
-	private File file;
+	private File defaultFile;
 	private HashMap<Cliente, List<Arquivo>> mapaclientesArq;
 	private List<Arquivo> resultArqs;
 	private JTextField txtMeuIp;
@@ -314,7 +314,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				HashMap<Cliente, List<Arquivo>> resultSearch = new HashMap<>();
 
 				try {
-					resultSearch = (HashMap<Cliente, List<Arquivo>>) clienteServ.procurarArquivo(search, filtro,
+					resultSearch = (HashMap<Cliente, List<Arquivo>>) conexaoServidor.procurarArquivo(search, filtro,
 							vlrFiltro);
 
 					if (!resultSearch.isEmpty()) {
@@ -407,8 +407,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		clientes = new ArrayList<Cliente>();
 
 		// Create folder of arqs
-		file = new File(PATH_DOW_UP);
-		file.mkdir();
+		defaultFile = new File(PATH_DOW_UP);
+		defaultFile.mkdir();
 
 		// Creating map about clients and arqs
 		mapaclientesArq = new HashMap<>();
@@ -439,12 +439,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			arq.setMd5(table.getValueAt(linhaSelecionada, 7).toString());
 
 			try {
-				registryClient = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
+				registryCliente = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
 
-				clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
-				clienteServ.registrarCliente(cliente);
+				conexaoServidor = (IServer) registryCliente.lookup(IServer.NOME_SERVICO);
+				conexaoServidor.registrarCliente(cliente);
 
-				byte[] arqBytes = clienteServ.baixarArquivo(cliente, arq);
+				byte[] arqBytes = conexaoServidor.baixarArquivo(cliente, arq);
 
 				String Md5Arqcop = new MethodUtils().getMD5(arq.getPath());
 
@@ -539,7 +539,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	// Return one lista with arqs
 	protected List<Arquivo> getArquivosDisponiveis() {
 
-		File dirStart = file;
+		File dirStart = defaultFile;
 
 		List<Arquivo> listArq = new ArrayList<>();
 
@@ -562,7 +562,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	// Retorna a extensao do arquivo
 	private String getFileExtension(File file2) {
-		String fileName = file.getName();
+		String fileName = defaultFile.getName();
 		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
 			return fileName.substring(fileName.lastIndexOf(".") + 1);
 		else
@@ -597,13 +597,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		int intPorta = Integer.parseInt(strPorta);
 
 		try {
-			registryClient = LocateRegistry.getRegistry(host, intPorta);
+			registryCliente = LocateRegistry.getRegistry(host, intPorta);
 
-			clienteServ = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
+			conexaoServidor = (IServer) registryCliente.lookup(IServer.NOME_SERVICO);
 
-			clienteServ.registrarCliente(cliente);
+			conexaoServidor.registrarCliente(cliente);
 
-			clienteServ.publicarListaArquivos(cliente, getArquivosDisponiveis());
+			conexaoServidor.publicarListaArquivos(cliente, getArquivosDisponiveis());
 
 			Thread thread = new Thread(new Runnable() {
 
@@ -615,8 +615,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 						try {
 							Cliente client = getClienteLocal();
 							List arqs = getArquivosDisponiveis();
-							clienteServ.publicarListaArquivos(client, arqs);
-							System.out.println("Arquivos do cliente " + client.getNome() + "atualizados com sucesso!!");
+							
+							conexaoServidor.publicarListaArquivos(client, arqs);
 
 							Thread.sleep(5000);
 						} catch (Exception e) {
@@ -676,7 +676,15 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 
-		mapaclientesArq.put(c, new ArrayList<>());
+		
+		if (mapaclientesArq.containsKey(c)) {
+			JOptionPane.showMessageDialog(TelaPrincipal.this, "Cliente já registrado no servidor.");
+		}else{
+			
+			mapaclientesArq.put(c, new ArrayList<>());
+		
+		}
+		
 
 	}
 
@@ -685,13 +693,19 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		HashMap<Cliente, List<Arquivo>> gambita = new HashMap<>();
 
+		gambita = mapaclientesArq;
+		
 		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
 
-			gambita.put(c, lista);
-			mapaclientesArq = gambita;
+			if (e.getKey().equals(c)) {
+				gambita.put(c, lista);
+			}
+			
+			
 
 		}
 
+		mapaclientesArq = gambita;
 	}
 
 	@Override
