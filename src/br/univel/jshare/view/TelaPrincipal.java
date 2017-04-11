@@ -615,7 +615,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 						try {
 							Cliente client = getClienteLocal();
 							List arqs = getArquivosDisponiveis();
-							
+
 							conexaoServidor.publicarListaArquivos(client, arqs);
 
 							Thread.sleep(5000);
@@ -676,36 +676,30 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 
-		
 		if (mapaclientesArq.containsKey(c)) {
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Cliente já registrado no servidor.");
-		}else{
-			
+		} else {
+
 			mapaclientesArq.put(c, new ArrayList<>());
-		
+
 		}
-		
 
 	}
 
 	@Override
 	public void publicarListaArquivos(Cliente c, List<Arquivo> lista) throws RemoteException {
 
-		HashMap<Cliente, List<Arquivo>> gambita = new HashMap<>();
-
-		gambita = mapaclientesArq;
-		
 		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
 
 			if (e.getKey().equals(c)) {
-				gambita.put(c, lista);
+
+				e.getValue().clear();
+				e.setValue(lista);
+
 			}
-			
-			
 
 		}
 
-		mapaclientesArq = gambita;
 	}
 
 	@Override
