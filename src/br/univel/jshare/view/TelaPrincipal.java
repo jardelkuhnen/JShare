@@ -460,6 +460,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			Files.write(Paths.get(PATH_DOW_UP.concat("\\" + file.getName() + arq.getExtensao())), arqBytes,
 					StandardOpenOption.CREATE);
 
+			JOptionPane.showMessageDialog(TelaPrincipal.this, "Arquivo baixado com sucesso.", "Informação",
+					JOptionPane.INFORMATION_MESSAGE);
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -598,8 +601,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 			conexaoServidor.registrarCliente(cliente);
 
-			conexaoServidor.publicarListaArquivos(cliente, getArquivosDisponiveis());
-
 			Thread thread = new Thread(new Runnable() {
 
 				@Override
@@ -609,12 +610,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 						try {
 
-							Cliente client = getClienteLocal();
-							ArrayList<Arquivo> arqs = (ArrayList<Arquivo>) getArquivosDisponiveis();
+							conexaoServidor.publicarListaArquivos(cliente, getArquivosDisponiveis());
 
-							conexaoServidor.publicarListaArquivos(client, arqs);
-
-							Thread.sleep(5000);
+							Thread.sleep(500);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -686,15 +684,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void publicarListaArquivos(Cliente c, List<Arquivo> lista) throws RemoteException {
 
-		for (java.util.Map.Entry<Cliente, List<Arquivo>> e : mapaclientesArq.entrySet()) {
-
-			if (e.getKey().equals(c)) {
-
-				e.getValue().clear();
-				e.setValue(lista);
-
-			}
-
+		if (mapaclientesArq.containsKey(c)) {
+			mapaclientesArq.entrySet().forEach(e -> {
+				if (e.getKey().equals(c)) {
+					e.setValue(lista);
+					System.out.println("Lista do cliente " + c.getNome() + " foi atualizada!!!");
+				}
+			});
 		}
 
 	}
