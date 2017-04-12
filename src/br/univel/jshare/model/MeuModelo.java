@@ -22,7 +22,7 @@ public class MeuModelo extends AbstractTableModel implements TableModel {
 			linhas += e.getValue().size();
 		}
 
-		matriz = new Object[linhas][8];
+		matriz = new Object[linhas][10];
 
 		int linha = 0;
 
@@ -36,6 +36,8 @@ public class MeuModelo extends AbstractTableModel implements TableModel {
 				matriz[linha][5] = arq.getExtensao();
 				matriz[linha][6] = arq.getTamanho();
 				matriz[linha][7] = arq.getMd5();
+				matriz[linha][8] = arq;
+				matriz[linha][9] = e;
 				linha++;
 			}
 		}
