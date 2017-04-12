@@ -76,8 +76,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JTextField txtValorFiltro;
 	private JComboBox cmbFiltros;
 	private static final String PATH_DOW_UP = "C:\\Share";
-	private Thread updateDir;
 	private JButton btnLigarServidor;
+	private Thread thread;
 
 	/**
 	 * Launch the application.
@@ -256,9 +256,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				try {
 
 					desconectar(getClienteLocal());
-
-					btnConectar.setEnabled(true);
-					btnDesconectar.setEnabled(false);
 
 				} catch (RemoteException e) {
 					e.printStackTrace();
@@ -496,11 +493,17 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	}
 
 	// Desliga o servico do servidor
-	protected void desligarServidor() {
+	public void desligarServidor() {
 
 		try {
-			UnicastRemoteObject.unexportObject(servidor, true);
-			servidor = null;
+			UnicastRemoteObject.unexportObject(TelaPrincipal.this, true);
+			conexaoServidor = null;
+			if (!(thread == null)) {
+				thread.interrupt();
+			}
+
+			System.out.println("Servidor RMI desligado");
+			txtMeuIp.setEnabled(true);
 
 		} catch (NoSuchObjectException e) {
 			e.printStackTrace();
@@ -546,7 +549,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				arq.setId(new Long(IdProd++));
 				arq.setNome(new MethodUtils().getNome(file.getName()));
 				arq.setExtensao(new MethodUtils().getExtension(file.getName()));
-				arq.setTamanho(file.length());
+				arq.setTamanho(file.getUsableSpace());
 				arq.setDataHoraModificacao(new Date(file.lastModified()));
 				arq.setPath(file.getPath());
 				arq.setMd5(new MethodUtils().getMD5(arq.getPath()));
@@ -601,7 +604,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 			conexaoServidor.registrarCliente(cliente);
 
-			Thread thread = new Thread(new Runnable() {
+			thread = new Thread(new Runnable() {
 
 				@Override
 				public void run() {
@@ -611,8 +614,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 						try {
 
 							conexaoServidor.publicarListaArquivos(cliente, getArquivosDisponiveis());
+							Thread.sleep(5000);
 
-							Thread.sleep(500);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -624,6 +627,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			thread.start();
 
 		} catch (Exception e) {
+			JOptionPane.showMessageDialog(TelaPrincipal.this, "Erro ao conectar ao servidor!!!", "Erro",
+					JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
 
@@ -763,8 +768,16 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 			}
 
-			resultSearch.put(client, resultArqs);
+			resultSearch.put(e.getKey(), resultArqs);
 		}
+
+		mapaclientesArq.forEach((key, value) -> {
+			List<Arquivo> listaResult = new ArrayList<>();
+			value.forEach(e -> {
+				listaResult.add(e);
+			});
+			resultSearch.put(key, listaResult);
+		});
 
 		return resultSearch;
 	}
@@ -792,10 +805,15 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
 
-		if (servidor != null) {
-			servidor.desconectar(c);
-			servidor = null;
+		if (c != null) {
+			if (mapaclientesArq.containsKey(c)) {
+				mapaclientesArq.remove(c);
+				System.out.println("Cliente removido com sucesso!!!");
+			}
 		}
+
+		btnDesconectar.setEnabled(true);
+		btnConectar.setEnabled(false);
 
 	}
 
