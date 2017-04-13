@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -789,6 +790,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		Path path = Paths.get(arq.getPath());
 
+		
+		
 		try {
 			arqCop = Files.readAllBytes(path);
 
