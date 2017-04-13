@@ -82,10 +82,10 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JButton btnLigarServidor;
 	private Thread thread;
 	private JSplitPane splitPane;
-	private JPanel panel_1;
+	private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy H:mm:ss");
+	private JScrollPane scrollPane_1;
 	private JTextArea logServidor;
-	private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy H:mm:ss:SSS");
-	private JPanel panel;
+	private JScrollPane scrollPane_2;
 	private JTextArea logCliente;
 
 	/**
@@ -405,17 +405,17 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		gbc_splitPane.gridy = 6;
 		contentPane.add(splitPane, gbc_splitPane);
 
-		panel_1 = new JPanel();
-		splitPane.setRightComponent(panel_1);
+		scrollPane_1 = new JScrollPane();
+		splitPane.setRightComponent(scrollPane_1);
 
 		logServidor = new JTextArea();
-		panel_1.add(logServidor);
+		scrollPane_1.setViewportView(logServidor);
 
-		panel = new JPanel();
-		splitPane.setLeftComponent(panel);
+		scrollPane_2 = new JScrollPane();
+		splitPane.setLeftComponent(scrollPane_2);
 
 		logCliente = new JTextArea();
-		panel.add(logCliente);
+		scrollPane_2.setViewportView(logCliente);
 
 		// Cria listagem de clientes
 		clientes = new ArrayList<Cliente>();
@@ -493,7 +493,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					JOptionPane.INFORMATION_MESSAGE);
 
 		} catch (IOException e) {
-			imprimirServidor(e.getMessage());
+			e.printStackTrace();
 		}
 
 	}
@@ -541,7 +541,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			imprimirServidor("Servidor está sendo encerrado!!!");
 
 		} catch (NoSuchObjectException e) {
-			imprimirServidor(e.getMessage());
+			e.printStackTrace();
 		}
 
 	}
@@ -653,7 +653,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 							Thread.sleep(5000);
 
 						} catch (Exception e) {
-							imprimirServidor(e.getMessage());
+							e.printStackTrace();
 						}
 
 					}
@@ -665,7 +665,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Erro ao conectar ao servidor!!!", "Erro",
 					JOptionPane.ERROR_MESSAGE);
-			imprimirServidor(e.getMessage());
+			e.printStackTrace();
 		}
 
 		btnConectar.setEnabled(false);
@@ -705,7 +705,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			registryServ.rebind(IServer.NOME_SERVICO, servidor);
 
 		} catch (RemoteException e) {
-			imprimirServidor(e.getMessage());
+			e.printStackTrace();
 		}
 
 		imprimirServidor("Servidor RMI iniciado");
@@ -836,7 +836,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		} catch (IOException e) {
 
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Erro ao ler arquivo", "Erro", JOptionPane.ERROR_MESSAGE);
-			imprimirServidor(e.getMessage());
+			e.printStackTrace();
 		}
 
 		return arqCop;
@@ -862,7 +862,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				txtIpServidor.setEditable(true);
 				txtPortaServidor.setEditable(true);
 				txtNomeCliente.setEditable(true);
-				imprimirServidor("Cliente " + c.getNome() + " desconectado com sucesso.");
+				imprimirServidor("Cliente " + c.getNome() + " se desconectou");
+				imprimirCliente("Cliente desconectado, lista removida");
 			}
 
 		}
