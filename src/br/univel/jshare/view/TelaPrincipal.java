@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -185,7 +186,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(lblNome, gbc_lblNome);
 
 		txtNomeCliente = new JTextField();
-		txtNomeCliente.setText("Jardel");
+		txtNomeCliente.setText("Jardel2");
 		GridBagConstraints gbc_txtNomeCliente = new GridBagConstraints();
 		gbc_txtNomeCliente.fill = GridBagConstraints.HORIZONTAL;
 		gbc_txtNomeCliente.insets = new Insets(0, 0, 5, 5);
@@ -433,7 +434,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 				byte[] arqBytes = conecServArq.baixarArquivo(cliente, arq);
 
-				String Md5Arqcop = new MethodUtils().getMD5(arq.getPath());
+				String Md5Arqcop = new MethodUtils().getMD5Checksum(arq.getPath());
 
 				if (arq.getMd5().equals(Md5Arqcop)) {
 
@@ -441,8 +442,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 				} else {
 
-					JOptionPane.showMessageDialog(TelaPrincipal.this, "Baixano arquivo corrompido", "Atenção",
-							JOptionPane.INFORMATION_MESSAGE);
+					copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
+
+					//
+					// JOptionPane.showMessageDialog(TelaPrincipal.this,
+					// "Baixano arquivo corrompido", "Atenção",
+					// JOptionPane.INFORMATION_MESSAGE);
 				}
 
 			} catch (Exception e) {
@@ -456,7 +461,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		try {
 			Files.write(Paths.get(PATH_DOW_UP.concat("\\" + file.getName() + arq.getExtensao())), arqBytes,
-					StandardOpenOption.CREATE);
+					StandardOpenOption.CREATE_NEW);
 
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Arquivo baixado com sucesso.", "Informação",
 					JOptionPane.INFORMATION_MESSAGE);
@@ -553,13 +558,14 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				arq.setTamanho(file.getUsableSpace());
 				arq.setDataHoraModificacao(new Date(file.lastModified()));
 				arq.setPath(file.getPath());
-				arq.setMd5(new MethodUtils().getMD5(arq.getPath()));
-				arq.setTamanho(file.getTotalSpace());
+				arq.setMd5(new MethodUtils().getMD5Checksum(arq.getPath()));
+				arq.setTamanho(file.length());
 
 				listArq.add(arq);
 			}
 		}
 		return listArq;
+
 	}
 
 	// Retorna a extensao do arquivo
@@ -790,8 +796,6 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		Path path = Paths.get(arq.getPath());
 
-		
-		
 		try {
 			arqCop = Files.readAllBytes(path);
 
