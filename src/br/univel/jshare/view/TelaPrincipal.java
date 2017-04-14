@@ -67,7 +67,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JTextField txtPortaServidor;
 	private long idCliente = 0;
 	private long IdProd = 0;
-	private List<Cliente> clientes;
+	private List<Cliente> clientes;	
 	private File defaultFile;
 	private HashMap<Cliente, List<Arquivo>> mapaclientesArq;
 	private List<Arquivo> resultArqs;
@@ -78,7 +78,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private JButton btnDownload;
 	private JTextField txtValorFiltro;
 	private JComboBox cmbFiltros;
-	private static final String PATH_DOW_UP = "C:\\Share";
+	private static final String PATH_DOW_UP = "./Share";
 	private JButton btnLigarServidor;
 	private Thread thread;
 	private JSplitPane splitPane;
@@ -160,6 +160,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		txtMinhaPorta.setColumns(10);
 
 		btnLigarServidor = new JButton("Ligar Servidor");
+		btnLigarServidor.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				
+				configuracaoInicial();
+				
+			}
+		});
 		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
 		gbc_btnLigarServidor.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnLigarServidor.insets = new Insets(0, 0, 5, 5);
@@ -421,7 +428,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		clientes = new ArrayList<Cliente>();
 
 		// Create folder of arqs
-		defaultFile = new File(PATH_DOW_UP);
+		defaultFile = new File("./Share");
 		defaultFile.mkdir();
 
 		// Creating map about clients and arqs
@@ -470,10 +477,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 					copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
 
-					//
-					// JOptionPane.showMessageDialog(TelaPrincipal.this,
-					// "Baixano arquivo corrompido", "Atenção",
-					// JOptionPane.INFORMATION_MESSAGE);
+					JOptionPane.showMessageDialog(TelaPrincipal.this, "Baixano arquivo corrompido", "Atenção",
+							 JOptionPane.INFORMATION_MESSAGE);
 				}
 
 			} catch (Exception e) {
@@ -487,7 +492,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		try {
 			Files.write(Paths.get(PATH_DOW_UP.concat("\\" + file.getName() + arq.getExtensao())), arqBytes,
-					StandardOpenOption.CREATE_NEW);
+					StandardOpenOption.CREATE);
 
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Arquivo baixado com sucesso.", "Informação",
 					JOptionPane.INFORMATION_MESSAGE);
@@ -505,6 +510,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		btnLigarServidor.setEnabled(false);
 		txtMinhaPorta.setEditable(false);
 		txtMeuIp.setEnabled(false);
+		btnDesconectar.setEnabled(false);
 
 		btnDesconectar.setEnabled(false);
 		btnPesquisar.setEnabled(false);
@@ -574,8 +580,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	// Return one lista with arqs
 	protected List<Arquivo> getArquivosDisponiveis() {
 
-		File dirStart = defaultFile;
-
+//		File dirStart = defaultFile;
+		File dirStart = new File("." + File.separatorChar + "share" + File.separatorChar);
 		List<Arquivo> listArq = new ArrayList<Arquivo>();
 
 		for (File file : dirStart.listFiles()) {
@@ -600,6 +606,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	// Retorna a extensao do arquivo
 	private String getFileExtension(File file2) {
 		String fileName = defaultFile.getName();
+		
 		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
 			return fileName.substring(fileName.lastIndexOf(".") + 1);
 		else
