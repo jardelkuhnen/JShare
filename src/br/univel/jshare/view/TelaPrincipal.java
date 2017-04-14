@@ -65,10 +65,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 	private Registry registryServ;
 	private Registry registryCliente;
 	private JTextField txtPortaServidor;
-	private long idCliente = 0;
-	private long IdProd = 0;
-	private List<Cliente> clientes;	
+	private List<Cliente> clientes;
 	private File defaultFile;
+	private long idProd = 0;
 	private HashMap<Cliente, List<Arquivo>> mapaclientesArq;
 	private List<Arquivo> resultArqs;
 	private JTextField txtMeuIp;
@@ -117,9 +116,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		setContentPane(contentPane);
 		GridBagLayout gbl_contentPane = new GridBagLayout();
 		gbl_contentPane.columnWidths = new int[] { 63, 186, 89, 46, 92, 99, 0 };
-		gbl_contentPane.rowHeights = new int[] { 20, 0, 23, 22, 0, 20, 0, 0 };
+		gbl_contentPane.rowHeights = new int[] { 20, 0, 23, 22, 0, 130, 0, 137, 0 };
 		gbl_contentPane.columnWeights = new double[] { 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
-		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE };
+		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
 
 		JLabel lblIp = new JLabel("Meu Ip Servidor");
@@ -162,9 +161,9 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		btnLigarServidor = new JButton("Ligar Servidor");
 		btnLigarServidor.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				
+
 				configuracaoInicial();
-				
+
 			}
 		});
 		GridBagConstraints gbc_btnLigarServidor = new GridBagConstraints();
@@ -200,7 +199,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		contentPane.add(lblNome, gbc_lblNome);
 
 		txtNomeCliente = new JTextField();
-		txtNomeCliente.setText("Jardel2");
+		txtNomeCliente.setText("Jardel");
 		GridBagConstraints gbc_txtNomeCliente = new GridBagConstraints();
 		gbc_txtNomeCliente.fill = GridBagConstraints.HORIZONTAL;
 		gbc_txtNomeCliente.insets = new Insets(0, 0, 5, 5);
@@ -333,7 +332,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 			}
 		});
 		GridBagConstraints gbc_btnPesquisar = new GridBagConstraints();
-		gbc_btnPesquisar.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnPesquisar.fill = GridBagConstraints.BOTH;
 		gbc_btnPesquisar.insets = new Insets(0, 0, 5, 0);
 		gbc_btnPesquisar.gridx = 5;
 		gbc_btnPesquisar.gridy = 3;
@@ -375,7 +374,17 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		txtValorFiltro.setColumns(10);
 
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.addMouseListener(new MouseAdapter() {
+		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
+		gbc_scrollPane.gridwidth = 6;
+		gbc_scrollPane.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane.gridx = 0;
+		gbc_scrollPane.gridy = 5;
+		contentPane.add(scrollPane, gbc_scrollPane);
+
+		table = new JTable();
+		scrollPane.setViewportView(table);
+		table.addMouseListener(new MouseAdapter() {
 
 			@Override
 			public void mouseClicked(MouseEvent click) {
@@ -392,21 +401,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 		});
 
-		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
-		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
-		gbc_scrollPane.gridwidth = 6;
-		gbc_scrollPane.fill = GridBagConstraints.BOTH;
-		gbc_scrollPane.gridx = 0;
-		gbc_scrollPane.gridy = 5;
-		contentPane.add(scrollPane, gbc_scrollPane);
-
-		table = new JTable();
-		scrollPane.setViewportView(table);
-
 		splitPane = new JSplitPane();
 		GridBagConstraints gbc_splitPane = new GridBagConstraints();
+		gbc_splitPane.gridheight = 2;
+		gbc_splitPane.insets = new Insets(0, 0, 5, 0);
 		gbc_splitPane.gridwidth = 6;
-		gbc_splitPane.insets = new Insets(0, 0, 0, 5);
 		gbc_splitPane.fill = GridBagConstraints.BOTH;
 		gbc_splitPane.gridx = 0;
 		gbc_splitPane.gridy = 6;
@@ -438,6 +437,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
+	/**
+	 * Busca as informaçoes do objeto a ser baixado através da linha selecionada pelo usuário
+	 * 
+	 * @param int
+	 *            linhaSelecionada
+	 */
 	protected void getArquivoCliente(int linhaSelecionada) {
 
 		if (linhaSelecionada < 0) {
@@ -467,19 +472,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 				byte[] arqBytes = conecServArq.baixarArquivo(cliente, arq);
 
-				String Md5Arqcop = new MethodUtils().getMD5Checksum(arq.getPath());
-
-				if (arq.getMd5().equals(Md5Arqcop)) {
-
-					copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
-
-				} else {
-
-					copiarArquivo(new File("Cópia de " + arq.getNome()), arqBytes, arq);
-
-					JOptionPane.showMessageDialog(TelaPrincipal.this, "Baixano arquivo corrompido", "Atenção",
-							 JOptionPane.INFORMATION_MESSAGE);
-				}
+				copiarArquivo(cliente, new File("Cópia de " + arq.getNome()), arqBytes, arq);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -488,11 +481,24 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
-	private void copiarArquivo(File file, byte[] arqBytes, Arquivo arq) {
+	
+	/**
+	 * 
+	 * Grava o arquivo após realizar o download
+	 * 
+	 * @param cliente
+	 * @param file
+	 * @param arqBytes
+	 * @param arq
+	 */
+	private void copiarArquivo(Cliente cliente, File file, byte[] arqBytes, Arquivo arq) {
 
 		try {
 			Files.write(Paths.get(PATH_DOW_UP.concat("\\" + file.getName() + arq.getExtensao())), arqBytes,
 					StandardOpenOption.CREATE);
+
+			imprimirServidor(
+					"Usuário " + cliente.getNome() + " baixou o arquivo: " + arq.getNome() + arq.getExtensao());
 
 			JOptionPane.showMessageDialog(TelaPrincipal.this, "Arquivo baixado com sucesso.", "Informação",
 					JOptionPane.INFORMATION_MESSAGE);
@@ -503,6 +509,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
+	
+	/**
+	 * 
+	 * Configuracao de botoes e fields de tela
+	 * 
+	 */
 	private void configuracaoInicial() {
 
 		// Begining RMI
@@ -518,10 +530,16 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
+	/**
+	 * 
+	 * Retornar um objeto Cliente com as informaçoes do cliente onde o sistema
+	 * está rodando
+	 * 
+	 * @return
+	 */
 	public Cliente getClienteLocal() {
 
 		Cliente cliente = new Cliente();
-		// cliente.setId(new Long(idCliente++));
 		cliente.setIp(txtMeuIp.getText().trim());
 		cliente.setNome(txtNomeCliente.getText().trim());
 		cliente.setPorta(Integer.parseInt(txtMinhaPorta.getText()));
@@ -530,7 +548,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
-	// Desliga o servico do servidor
+	/**
+	 * 
+	 * Finaliza o servico do servidor, removendo o objeto esportado
+	 * 
+	 */
 	public void desligarServidor() {
 
 		try {
@@ -552,6 +574,12 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
+	/**
+	 * 
+	 * Retorna o ip da máquina onde o sistema está rodando
+	 * 
+	 * @return
+	 */
 	private String getMeuIp() {
 		InetAddress IP = null;
 
@@ -565,7 +593,13 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		return IP.getHostAddress().toString();
 	}
 
-	// Return a client of mapClients
+	/**
+	 * 
+	 * Retorna um objeto cliente a partir do HashMap
+	 * 
+	 * @param e
+	 * @return
+	 */
 	private Cliente getClient(java.util.Map.Entry<Cliente, List<Arquivo>> e) {
 
 		Cliente client = new Cliente();
@@ -577,17 +611,23 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 		return client;
 	}
 
-	// Return one lista with arqs
+
+	/**
+	 * 
+	 * Retorna um List com os arquivos que o usuário local possui
+	 * 
+	 * @return
+	 */
 	protected List<Arquivo> getArquivosDisponiveis() {
 
-//		File dirStart = defaultFile;
+		// File dirStart = defaultFile;
 		File dirStart = new File("." + File.separatorChar + "share" + File.separatorChar);
 		List<Arquivo> listArq = new ArrayList<Arquivo>();
 
 		for (File file : dirStart.listFiles()) {
 			if (file.isFile()) {
 				Arquivo arq = new Arquivo();
-				arq.setId(new Long(IdProd++));
+				arq.setId(new Long(idProd++));
 				arq.setNome(new MethodUtils().getNome(file.getName()));
 				arq.setExtensao(new MethodUtils().getExtension(file.getName()));
 				arq.setTamanho(file.getUsableSpace());
@@ -603,10 +643,17 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
-	// Retorna a extensao do arquivo
-	private String getFileExtension(File file2) {
-		String fileName = defaultFile.getName();
-		
+
+	/**
+	 * 
+	 * Retorna uma String com a extensao do arquivo
+	 * 
+	 * @param file2
+	 * @return
+	 */
+	private String getFileExtension(File file) {
+		String fileName = file.getName();
+
 		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
 			return fileName.substring(fileName.lastIndexOf(".") + 1);
 		else
@@ -614,6 +661,11 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 
 	}
 
+	/**
+	 * 
+	 * Realiza conexao com o servidor de terceiros
+	 * 
+	 */
 	protected void conectarServidor() {
 
 		String meuNome = txtNomeCliente.getText().trim();
@@ -804,7 +856,7 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 					break;
 				case EXTENSAO:
 
-					if (arq.getExtensao().contains(query)) {
+					if (arq.getExtensao().equalsIgnoreCase(query)) {
 						resultArqs.add(arq);
 					}
 					break;
@@ -869,8 +921,8 @@ public class TelaPrincipal extends JFrame implements IServer, Serializable {
 				txtIpServidor.setEditable(true);
 				txtPortaServidor.setEditable(true);
 				txtNomeCliente.setEditable(true);
-				imprimirServidor("Cliente " + c.getNome() + " se desconectou");
-				imprimirCliente("Cliente desconectado, lista removida");
+				imprimirServidor("Usuário " + c.getNome() + " se desconectou.");
+				imprimirCliente("Usuário desconectado, sua lista foi removida do servidor.");
 			}
 
 		}
